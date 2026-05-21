@@ -28,7 +28,7 @@ app.get('/', (req, res) => res.send('StudyBuddy AI API Running'));
 app.use(errorHandler);
 
 // ✅ Ye line Vercel ke liye must hai
-export const handler = serverless(app);
+export default serverless(app);
 
 // ✅ Local development ke liye (npm run dev)
 if (process.env.NODE_ENV !== 'production') {
