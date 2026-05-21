@@ -11,7 +11,6 @@ import { errorHandler } from './middleware/errorMiddleware.js';
 import serverless from 'serverless-http';
 
 dotenv.config();
-connectDB();
 
 const app = express();
 app.use(cors());
@@ -27,11 +26,33 @@ app.get('/', (req, res) => res.send('StudyBuddy AI API Running'));
 
 app.use(errorHandler);
 
-// ✅ Ye line Vercel ke liye must hai
-export default serverless(app);
+// ✅ Vercel handler with lazy database connection
+let dbConnected = false;
+const serverlessApp = serverless(app);
 
-// ✅ Local development ke liye (npm run dev)
+export default async function handler(event, context) {
+  if (!dbConnected) {
+    try {
+      await connectDB();
+      dbConnected = true;
+      console.log('Database connected successfully');
+    } catch (err) {
+      console.error('Database connection failed:', err.message);
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ message: 'Database connection error' })
+      };
+    }
+  }
+  return serverlessApp(event, context);
+}
+
+// ✅ Local development
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 5001;
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  const start = async () => {
+    await connectDB();
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  };
+  start();
 }
